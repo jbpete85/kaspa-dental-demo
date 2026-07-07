@@ -3,6 +3,7 @@ import {
   Lock,
   X,
   ArrowUp,
+  ArrowClockwise,
   PaperPlaneRight,
   Plus,
   Camera,
@@ -10,8 +11,12 @@ import {
   ThumbsUp,
   Smiley,
   CaretLeft,
+  CaretRight,
   Phone,
   VideoCamera,
+  Export,
+  Book,
+  Browsers,
   Tooth,
 } from '@phosphor-icons/react'
 import { useChannelConversation } from '@/lib/useChannelConversation'
@@ -21,6 +26,10 @@ import { cn } from '@/lib/utils'
 
 export type WebSkin = 'website' | 'messenger'
 
+const IOS_BLUE = '#007AFF'
+const FB_BLUE = '#0084FF'
+const LABEL_GRAY = '#8E8E93'
+
 export function WebChat({ live, skin }: { live: boolean; skin: WebSkin }) {
   return skin === 'messenger' ? <MessengerThread live={live} /> : <WebsiteWidget live={live} />
 }
@@ -28,14 +37,16 @@ export function WebChat({ live, skin }: { live: boolean; skin: WebSkin }) {
 function TypingDots({ color }: { color: string }) {
   return (
     <div className="flex items-center gap-1">
-      <span className="ios-dot h-2 w-2 rounded-full" style={{ background: color }} />
-      <span className="ios-dot h-2 w-2 rounded-full" style={{ background: color }} />
-      <span className="ios-dot h-2 w-2 rounded-full" style={{ background: color }} />
+      <span className="ios-dot rounded-full" style={{ width: 8, height: 8, background: color }} />
+      <span className="ios-dot rounded-full" style={{ width: 8, height: 8, background: color }} />
+      <span className="ios-dot rounded-full" style={{ width: 8, height: 8, background: color }} />
     </div>
   )
 }
 
-/* ----------------------------- Website widget ----------------------------- */
+/* ----------------------------- Website widget -----------------------------
+   Safari chrome is authentic (bottom address capsule + toolbar, per iOS 15+);
+   the chat widget itself is Kaspa's own product UI, so it stays branded. */
 
 function WebsiteWidget({ live }: { live: boolean }) {
   const convo = useChannelConversation(WEB_SCRIPT)
@@ -57,65 +68,65 @@ function WebsiteWidget({ live }: { live: boolean }) {
   }
 
   return (
-    <div className="relative h-full overflow-hidden bg-[#e9eef3] font-ios text-black">
-      {/* Safari URL bar */}
-      <div className="px-3 pb-2 pt-[46px]">
-        <div className="mx-auto flex w-[86%] items-center justify-center gap-1.5 rounded-full bg-white/95 py-1.5 text-[13px] text-black/55 shadow-sm">
-          <Lock size={12} weight="fill" /> {kaspa.domain}
-        </div>
-      </div>
-
-      {/* Faux site peeking behind the widget */}
-      <div className="px-5 pt-2">
-        <div className="text-[20px] font-semibold" style={{ color: kaspa.accentDeep }}>
-          {kaspa.name}
-        </div>
-        <div className="text-[12px] text-black/45">{kaspa.tagline}</div>
-        <div className="mt-3 h-16 rounded-xl bg-white/70" />
+    <div className="relative h-full overflow-hidden bg-[#eef1f4] font-ios text-black">
+      {/* Faux Kaspa site behind the widget */}
+      <div style={{ paddingTop: 72, paddingLeft: 20, paddingRight: 20 }}>
+        <div style={{ fontSize: 24, fontWeight: 600, color: kaspa.accentDeep }}>{kaspa.name}</div>
+        <div style={{ marginTop: 2, fontSize: 13, color: 'rgba(0,0,0,0.45)' }}>{kaspa.tagline}</div>
+        <div className="rounded-2xl bg-white/75" style={{ marginTop: 14, height: 92 }} />
+        <div className="rounded-2xl bg-white/60" style={{ marginTop: 10, height: 56 }} />
       </div>
 
       {/* Chat widget */}
-      <div className="absolute inset-x-2 bottom-2 flex h-[76%] flex-col overflow-hidden rounded-[22px] bg-white shadow-[0_12px_44px_rgba(0,0,0,0.20)]">
+      <div
+        className="absolute flex flex-col overflow-hidden bg-white"
+        style={{ left: 10, right: 10, bottom: 104, height: '58%', borderRadius: 22, boxShadow: '0 14px 48px rgba(0,0,0,0.22)' }}
+      >
         {/* Header */}
         <div
-          className="flex shrink-0 items-center gap-2.5 px-3.5 py-3 text-white"
-          style={{ background: `linear-gradient(135deg, ${kaspa.accent}, ${kaspa.accentDeep})` }}
+          className="flex shrink-0 items-center text-white"
+          style={{ gap: 10, padding: '12px 14px', background: `linear-gradient(135deg, ${kaspa.accent}, ${kaspa.accentDeep})` }}
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
+          <div className="flex items-center justify-center rounded-full bg-white/20" style={{ width: 36, height: 36 }}>
             <Tooth size={20} weight="fill" />
           </div>
           <div className="flex-1 leading-tight">
-            <div className="text-[14px] font-semibold">{kaspa.name}</div>
-            <div className="flex items-center gap-1 text-[11px] text-white/80">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#34d058]" /> Online now
+            <div style={{ fontSize: 15, fontWeight: 600 }}>{kaspa.name}</div>
+            <div className="flex items-center" style={{ gap: 5, fontSize: 11.5, color: 'rgba(255,255,255,0.85)' }}>
+              <span className="rounded-full" style={{ width: 6, height: 6, background: '#34d058' }} /> Online now
             </div>
           </div>
-          <X size={18} weight="bold" className="text-white/80" />
+          <X size={18} weight="bold" className="text-white/85" />
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="no-scrollbar flex-1 space-y-2 overflow-y-auto bg-[#f7f8fa] px-3 py-3">
-          {convo.messages.map((m) =>
-            m.from === 'me' ? (
-              <div key={m.id} className="flex justify-end">
+        <div ref={scrollRef} className="no-scrollbar flex-1 overflow-y-auto bg-[#f7f8fa]" style={{ padding: 12 }}>
+          {convo.messages.map((m, i) => {
+            const isMe = m.from === 'me'
+            const nextSame = i < convo.messages.length - 1 && convo.messages[i + 1].from === m.from
+            return (
+              <div key={m.id} className={cn('flex', isMe ? 'justify-end' : 'justify-start')} style={{ marginBottom: nextSame ? 3 : 10 }}>
                 <div
-                  className="bubble-in max-w-[80%] rounded-[16px] rounded-br-[5px] px-3 py-2 text-[14px] leading-snug text-white"
-                  style={{ background: kaspa.accent }}
+                  className="bubble-in"
+                  style={{
+                    maxWidth: '80%',
+                    padding: '8px 12px',
+                    fontSize: 15,
+                    lineHeight: '20px',
+                    borderRadius: 16,
+                    ...(isMe
+                      ? { background: kaspa.accent, color: '#fff', borderBottomRightRadius: nextSame ? 16 : 5 }
+                      : { background: '#ffffff', color: '#000', boxShadow: '0 1px 2px rgba(0,0,0,0.07)', borderBottomLeftRadius: nextSame ? 16 : 5 }),
+                  }}
                 >
                   {m.text}
                 </div>
               </div>
-            ) : (
-              <div key={m.id} className="flex justify-start">
-                <div className="bubble-in max-w-[80%] rounded-[16px] rounded-bl-[5px] bg-white px-3 py-2 text-[14px] leading-snug text-black shadow-sm">
-                  {m.text}
-                </div>
-              </div>
-            ),
-          )}
+            )
+          })}
           {convo.isTyping && (
-            <div className="flex justify-start">
-              <div className="rounded-[16px] rounded-bl-[5px] bg-white px-3.5 py-3 shadow-sm">
+            <div className="flex justify-start" style={{ marginBottom: 10 }}>
+              <div style={{ padding: '12px 14px', borderRadius: 16, borderBottomLeftRadius: 5, background: '#ffffff', boxShadow: '0 1px 2px rgba(0,0,0,0.07)' }}>
                 <TypingDots color="#b0b4bb" />
               </div>
             </div>
@@ -123,22 +134,50 @@ function WebsiteWidget({ live }: { live: boolean }) {
         </div>
 
         {/* Input */}
-        <div className="flex shrink-0 items-center gap-2 border-t border-black/5 px-2.5 py-2.5">
+        <div className="flex shrink-0 items-center" style={{ gap: 8, padding: 10, borderTop: '0.5px solid rgba(0,0,0,0.08)' }}>
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && send()}
             placeholder="Type a message…"
-            className="h-9 flex-1 rounded-full bg-[#eff1f4] px-3.5 text-[14px] outline-none placeholder:text-black/40"
+            className="flex-1 rounded-full bg-[#eff1f4] outline-none placeholder:text-black/40"
+            style={{ height: 38, paddingLeft: 14, paddingRight: 14, fontSize: 15 }}
           />
           <button
             onClick={send}
             disabled={!draft.trim()}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-white transition disabled:opacity-40"
-            style={{ background: kaspa.accent }}
+            className="flex items-center justify-center rounded-full text-white transition disabled:opacity-40"
+            style={{ width: 36, height: 36, background: kaspa.accent }}
           >
             <ArrowUp size={18} weight="bold" />
           </button>
+        </div>
+      </div>
+
+      {/* Safari bottom chrome — address capsule + toolbar (iOS 15+) */}
+      <div
+        className="absolute inset-x-0 bottom-0"
+        style={{ background: 'rgba(249,249,249,0.94)', backdropFilter: 'blur(20px)', borderTop: '0.5px solid rgba(60,60,67,0.29)' }}
+      >
+        <div
+          className="relative flex items-center justify-center bg-white"
+          style={{ margin: '8px 10px 0', height: 44, borderRadius: 13, boxShadow: '0 1px 3px rgba(0,0,0,0.12)' }}
+        >
+          <span className="absolute" style={{ left: 12, fontSize: 15, color: '#3C3C43' }}>
+            aA
+          </span>
+          <span className="flex items-center" style={{ gap: 5, fontSize: 16, color: '#000' }}>
+            <Lock size={12} weight="fill" color={LABEL_GRAY} />
+            {kaspa.domain}
+          </span>
+          <ArrowClockwise size={16} className="absolute" style={{ right: 12, color: '#3C3C43' }} />
+        </div>
+        <div className="flex items-center justify-between" style={{ padding: '8px 26px 26px', color: IOS_BLUE }}>
+          <CaretLeft size={24} />
+          <CaretRight size={24} style={{ opacity: 0.3 }} />
+          <Export size={22} />
+          <Book size={22} />
+          <Browsers size={22} />
         </div>
       </div>
     </div>
@@ -146,8 +185,6 @@ function WebsiteWidget({ live }: { live: boolean }) {
 }
 
 /* --------------------------- Facebook Messenger --------------------------- */
-
-const FB_BLUE = '#0084ff'
 
 function MessengerThread({ live }: { live: boolean }) {
   const convo = useChannelConversation(WEB_SCRIPT)
@@ -168,54 +205,80 @@ function MessengerThread({ live }: { live: boolean }) {
     setDraft('')
   }
 
+  const msgs = convo.messages
+
   return (
     <div className="flex h-full flex-col bg-white font-ios text-black">
       {/* Header */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-black/5 px-3 pb-2 pt-[46px]">
-        <CaretLeft size={26} weight="bold" style={{ color: FB_BLUE }} />
+      <div
+        className="flex shrink-0 items-center"
+        style={{ gap: 8, padding: '59px 14px 8px', borderBottom: '0.5px solid rgba(0,0,0,0.08)' }}
+      >
+        <CaretLeft size={28} style={{ color: FB_BLUE }} />
         <div
-          className="flex h-8 w-8 items-center justify-center rounded-full text-white"
-          style={{ background: `linear-gradient(135deg, ${kaspa.accent}, ${kaspa.accentDeep})` }}
+          className="flex items-center justify-center rounded-full text-white"
+          style={{ width: 36, height: 36, background: `linear-gradient(135deg, ${kaspa.accent}, ${kaspa.accentDeep})` }}
         >
-          <Tooth size={17} weight="fill" />
+          <Tooth size={19} weight="fill" />
         </div>
-        <div className="flex-1 leading-tight">
-          <div className="text-[14px] font-semibold">{kaspa.name}</div>
-          <div className="text-[11px] text-black/45">Active now</div>
+        <div className="flex-1 leading-tight" style={{ marginLeft: 2 }}>
+          <div style={{ fontSize: 16, fontWeight: 600 }}>{kaspa.name}</div>
+          <div style={{ fontSize: 12, color: LABEL_GRAY }}>Active now</div>
         </div>
-        <Phone size={22} weight="fill" style={{ color: FB_BLUE }} />
-        <VideoCamera size={24} weight="fill" style={{ color: FB_BLUE }} />
+        <div className="flex items-center" style={{ gap: 20, color: FB_BLUE }}>
+          <Phone size={22} weight="fill" />
+          <VideoCamera size={24} weight="fill" />
+        </div>
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="no-scrollbar flex-1 space-y-1.5 overflow-y-auto px-3 py-3">
-        {convo.messages.map((m, i) =>
-          m.from === 'me' ? (
-            <div key={m.id} className="flex justify-end">
+      <div ref={scrollRef} className="no-scrollbar flex-1 overflow-y-auto" style={{ padding: '12px 12px 6px' }}>
+        {msgs.map((m, i) => {
+          const isMe = m.from === 'me'
+          const prevSame = i > 0 && msgs[i - 1].from === m.from
+          const nextSame = i < msgs.length - 1 && msgs[i + 1].from === m.from
+          const t = 4
+          const b = 18
+          const borderRadius = isMe
+            ? `${b}px ${prevSame ? t : b}px ${nextSame ? t : b}px ${b}px`
+            : `${prevSame ? t : b}px ${b}px ${b}px ${nextSame ? t : b}px`
+          return (
+            <div key={m.id} className={cn('flex items-end', isMe ? 'justify-end' : 'justify-start')} style={{ gap: 6, marginBottom: nextSame ? 2 : 8 }}>
+              {/* Messenger shows the avatar only on the last bubble of a group */}
+              {!isMe &&
+                (nextSame ? (
+                  <span style={{ width: 24 }} />
+                ) : (
+                  <div
+                    className="flex shrink-0 items-center justify-center rounded-full text-white"
+                    style={{ width: 24, height: 24, background: kaspa.accent }}
+                  >
+                    <Tooth size={13} weight="fill" />
+                  </div>
+                ))}
               <div
-                className="bubble-in max-w-[78%] rounded-[18px] rounded-br-[5px] px-3.5 py-2 text-[15px] leading-snug text-white"
-                style={{ background: FB_BLUE }}
+                className="bubble-in"
+                style={{
+                  maxWidth: '72%',
+                  padding: '8px 12px',
+                  fontSize: 16,
+                  lineHeight: '21px',
+                  borderRadius,
+                  background: isMe ? FB_BLUE : '#F0F0F0',
+                  color: isMe ? '#fff' : '#000',
+                }}
               >
                 {m.text}
               </div>
             </div>
-          ) : (
-            <div key={m.id} className="flex items-end justify-start gap-1.5">
-              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white" style={{ background: kaspa.accent }}>
-                <Tooth size={11} weight="fill" />
-              </div>
-              <div className="bubble-in max-w-[78%] rounded-[18px] rounded-bl-[5px] bg-[#f0f0f0] px-3.5 py-2 text-[15px] leading-snug text-black">
-                {m.text}
-              </div>
-            </div>
-          ),
-        )}
+          )
+        })}
         {convo.isTyping && (
-          <div className="flex items-end justify-start gap-1.5">
-            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white" style={{ background: kaspa.accent }}>
-              <Tooth size={11} weight="fill" />
+          <div className="flex items-end justify-start" style={{ gap: 6, marginBottom: 8 }}>
+            <div className="flex shrink-0 items-center justify-center rounded-full text-white" style={{ width: 24, height: 24, background: kaspa.accent }}>
+              <Tooth size={13} weight="fill" />
             </div>
-            <div className="rounded-[18px] rounded-bl-[5px] bg-[#f0f0f0] px-3.5 py-3">
+            <div style={{ padding: '12px 14px', borderRadius: 18, borderBottomLeftRadius: 4, background: '#F0F0F0' }}>
               <TypingDots color="#9a9a9a" />
             </div>
           </div>
@@ -223,26 +286,27 @@ function MessengerThread({ live }: { live: boolean }) {
       </div>
 
       {/* Input */}
-      <div className="flex shrink-0 items-center gap-2.5 px-3 pb-5 pt-2" style={{ color: FB_BLUE }}>
-        <Plus size={24} weight="bold" />
-        <Camera size={24} weight="fill" />
-        <Microphone size={24} weight="fill" />
-        <div className="flex flex-1 items-center rounded-full bg-[#f0f0f0] pl-3.5 pr-2">
+      <div className="flex shrink-0 items-center" style={{ gap: 14, padding: '6px 12px 26px', color: FB_BLUE }}>
+        <Plus size={26} weight="bold" />
+        <Camera size={26} weight="fill" />
+        <Microphone size={26} weight="fill" />
+        <div className="flex flex-1 items-center bg-[#F0F0F0]" style={{ height: 36, borderRadius: 18, paddingLeft: 14, paddingRight: 8 }}>
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && send()}
             placeholder="Aa"
-            className="h-8 flex-1 bg-transparent text-[15px] text-black outline-none placeholder:text-black/40"
+            className="h-full flex-1 bg-transparent text-black outline-none placeholder:text-black/40"
+            style={{ fontSize: 17 }}
           />
-          <Smiley size={20} weight="fill" className="text-black/35" />
+          <Smiley size={22} weight="fill" className="text-black/35" />
         </div>
         {draft.trim() ? (
           <button onClick={send}>
-            <PaperPlaneRight size={24} weight="fill" />
+            <PaperPlaneRight size={26} weight="fill" />
           </button>
         ) : (
-          <ThumbsUp size={24} weight="fill" />
+          <ThumbsUp size={28} weight="fill" />
         )}
       </div>
     </div>

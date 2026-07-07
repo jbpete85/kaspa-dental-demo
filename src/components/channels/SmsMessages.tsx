@@ -1,9 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { CaretLeft, VideoCamera, Plus, ArrowUp, Tooth } from '@phosphor-icons/react'
+import { CaretLeft, CaretRight, Plus, ArrowUp, Tooth } from '@phosphor-icons/react'
 import { useChannelConversation } from '@/lib/useChannelConversation'
 import { SMS_SCRIPT } from '@/lib/mockConversations'
 import { kaspa } from '@/lib/kaspa.config'
 import { cn } from '@/lib/utils'
+
+/* iOS light-mode Messages palette */
+const IOS_BLUE = '#007AFF'
+const SMS_GREEN = '#34C759'
+const RECEIVED_GRAY = '#E9E9EB'
+const LABEL_GRAY = '#8E8E93'
 
 export function SmsMessages({ live }: { live: boolean }) {
   const convo = useChannelConversation(SMS_SCRIPT)
@@ -25,78 +31,121 @@ export function SmsMessages({ live }: { live: boolean }) {
     setDraft('')
   }
 
+  const msgs = convo.messages
+
   return (
     <div className="flex h-full flex-col bg-white font-ios text-black">
-      {/* Header */}
-      <div className="relative shrink-0 border-b border-black/10 bg-[#f7f7f7]/95 px-3 pb-2 pt-[46px] backdrop-blur-xl">
-        <button className="absolute bottom-2 left-3 text-[#0a84ff]">
-          <CaretLeft size={26} weight="bold" />
+      {/* Nav bar — back chevron, centered 50pt avatar, name + disclosure below */}
+      <div
+        className="relative shrink-0"
+        style={{
+          paddingTop: 59,
+          paddingBottom: 10,
+          background: 'rgba(249,249,249,0.94)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '0.5px solid rgba(60,60,67,0.29)',
+        }}
+      >
+        <button className="absolute" style={{ left: 8, bottom: 30, color: IOS_BLUE }}>
+          <CaretLeft size={28} />
         </button>
         <div className="flex flex-col items-center">
           <div
-            className="flex h-9 w-9 items-center justify-center rounded-full text-white"
-            style={{ background: `linear-gradient(135deg, ${kaspa.accent}, ${kaspa.accentDeep})` }}
+            className="flex items-center justify-center rounded-full text-white"
+            style={{ width: 50, height: 50, background: `linear-gradient(135deg, ${kaspa.accent}, ${kaspa.accentDeep})` }}
           >
-            <Tooth size={18} weight="fill" />
+            <Tooth size={26} weight="fill" />
           </div>
-          <span className="mt-0.5 text-[11px] font-medium leading-tight">{kaspa.name}</span>
+          <span className="flex items-center" style={{ marginTop: 3, fontSize: 11.5, gap: 1 }}>
+            {kaspa.name}
+            <CaretRight size={9} color="#B8B8BE" weight="bold" />
+          </span>
         </div>
-        <button className="absolute bottom-2 right-3 text-[#0a84ff]">
-          <VideoCamera size={24} weight="fill" />
-        </button>
       </div>
 
       {/* Thread */}
-      <div ref={scrollRef} className="no-scrollbar flex-1 space-y-1.5 overflow-y-auto px-3 py-3">
-        <div className="pb-1 text-center text-[11px] text-black/35">Text Message · SMS</div>
-        {convo.messages.map((m) =>
-          m.from === 'me' ? (
-            <div key={m.id} className="flex justify-end">
-              <div className="bubble-in max-w-[78%] rounded-[18px] rounded-br-[5px] bg-[#34c759] px-3.5 py-2 text-[15px] leading-snug text-white">
+      <div ref={scrollRef} className="no-scrollbar flex-1 overflow-y-auto" style={{ padding: '10px 16px 6px' }}>
+        <div className="text-center" style={{ fontSize: 11.5, color: LABEL_GRAY, paddingBottom: 2 }}>
+          <span style={{ fontWeight: 600 }}>Today</span> 9:41 AM
+        </div>
+        <div className="text-center" style={{ fontSize: 11.5, color: LABEL_GRAY, paddingBottom: 10 }}>
+          Text Message · SMS
+        </div>
+
+        {msgs.map((m, i) => {
+          const isMe = m.from === 'me'
+          const prevSame = i > 0 && msgs[i - 1].from === m.from
+          const nextSame = i < msgs.length - 1 && msgs[i + 1].from === m.from
+          const t = 5
+          const b = 18
+          // grouped bubbles tighten the stacked-side corners; last-of-group gets the tail
+          const borderRadius = isMe
+            ? `${b}px ${prevSame ? t : b}px ${nextSame ? t : b}px ${b}px`
+            : `${prevSame ? t : b}px ${b}px ${b}px ${nextSame ? t : b}px`
+          return (
+            <div
+              key={m.id}
+              className={cn('flex', isMe ? 'justify-end' : 'justify-start')}
+              style={{ marginBottom: nextSame ? 2 : 8 }}
+            >
+              <div
+                className={cn('bubble-in', !nextSame && (isMe ? 'msg-tail msg-tail-out' : 'msg-tail msg-tail-in'))}
+                style={{
+                  maxWidth: '75%',
+                  padding: '7px 12px',
+                  fontSize: 17,
+                  lineHeight: '22px',
+                  borderRadius,
+                  background: isMe ? SMS_GREEN : RECEIVED_GRAY,
+                  color: isMe ? '#ffffff' : '#000000',
+                }}
+              >
                 {m.text}
               </div>
             </div>
-          ) : (
-            <div key={m.id} className="flex justify-start">
-              <div className="bubble-in max-w-[78%] rounded-[18px] rounded-bl-[5px] bg-[#e9e9eb] px-3.5 py-2 text-[15px] leading-snug text-black">
-                {m.text}
-              </div>
-            </div>
-          ),
-        )}
+          )
+        })}
         {convo.isTyping && (
-          <div className="flex justify-start">
-            <div className="flex items-center gap-1 rounded-[18px] rounded-bl-[5px] bg-[#e9e9eb] px-3.5 py-3">
-              <span className="ios-dot h-2 w-2 rounded-full bg-[#8e8e93]" />
-              <span className="ios-dot h-2 w-2 rounded-full bg-[#8e8e93]" />
-              <span className="ios-dot h-2 w-2 rounded-full bg-[#8e8e93]" />
+          <div className="flex justify-start" style={{ marginBottom: 8 }}>
+            <div
+              className="msg-tail msg-tail-in flex items-center"
+              style={{ gap: 5, padding: '13px 14px', borderRadius: 18, background: RECEIVED_GRAY }}
+            >
+              <span className="ios-dot rounded-full" style={{ width: 8, height: 8, background: LABEL_GRAY }} />
+              <span className="ios-dot rounded-full" style={{ width: 8, height: 8, background: LABEL_GRAY }} />
+              <span className="ios-dot rounded-full" style={{ width: 8, height: 8, background: LABEL_GRAY }} />
             </div>
           </div>
         )}
       </div>
 
-      {/* Input */}
-      <div className="flex shrink-0 items-center gap-2 px-2.5 pb-5 pt-2">
-        <button className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e9e9eb] text-black/60">
+      {/* Input — plus button, hairline field, green send inside the field */}
+      <div className="flex shrink-0 items-center" style={{ gap: 10, padding: '6px 14px 26px' }}>
+        <button
+          className="flex shrink-0 items-center justify-center rounded-full"
+          style={{ width: 34, height: 34, background: RECEIVED_GRAY, color: '#7C7C82' }}
+        >
           <Plus size={20} weight="bold" />
         </button>
-        <div className="flex flex-1 items-center rounded-full border border-black/15 bg-white pl-3.5 pr-1">
+        <div
+          className="flex flex-1 items-center"
+          style={{ height: 36, borderRadius: 18, border: '1px solid rgba(60,60,67,0.22)', paddingLeft: 14, paddingRight: 4 }}
+        >
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && send()}
-            placeholder="Text Message"
-            className="h-8 flex-1 bg-transparent text-[15px] outline-none placeholder:text-black/35"
+            placeholder="Text Message · SMS"
+            className="h-full flex-1 bg-transparent outline-none"
+            style={{ fontSize: 17 }}
           />
           <button
             onClick={send}
             disabled={!draft.trim()}
-            className={cn(
-              'flex h-7 w-7 items-center justify-center rounded-full transition',
-              draft.trim() ? 'bg-[#34c759] text-white' : 'bg-[#e4e4e6] text-white/70',
-            )}
+            className="flex shrink-0 items-center justify-center rounded-full transition"
+            style={{ width: 28, height: 28, background: draft.trim() ? SMS_GREEN : '#E5E5EA', color: '#ffffff' }}
           >
-            <ArrowUp size={18} weight="bold" />
+            <ArrowUp size={17} weight="bold" />
           </button>
         </div>
       </div>

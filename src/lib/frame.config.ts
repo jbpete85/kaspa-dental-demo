@@ -7,7 +7,19 @@
  * `color` must match a file present in /public/frames for that device.
  */
 
-export const FRAME_WIDTH = 312
+export const FRAME_WIDTH = 340
+
+/** Logical (point) screen size per device — UI renders at native points, then scales. */
+const LOGICAL_SIZES: Record<string, { width: number; height: number }> = {
+  '17': { width: 402, height: 874 },
+  '17 Pro': { width: 402, height: 874 },
+  '17 Pro Max': { width: 440, height: 956 },
+  Air: { width: 420, height: 912 },
+}
+
+export function logicalSize() {
+  return LOGICAL_SIZES[activeFrame.device] ?? LOGICAL_SIZES['17 Pro']
+}
 
 type Geom = {
   aspect: number // image width / height

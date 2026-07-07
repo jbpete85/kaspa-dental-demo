@@ -95,3 +95,30 @@ button, [role="button"], a[href], summary {
 /* Hide scrollbars inside the phone screens */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ============================================
+   iMessage bubble tails — applied to the last
+   bubble of a group. Colored curl + thread-bg
+   mask carve (classic two-pseudo technique).
+   ============================================ */
+.msg-tail { position: relative; }
+.msg-tail-out::before {
+  content: ""; position: absolute; bottom: 0; right: -7px;
+  width: 20px; height: 20px; background: inherit;
+  border-bottom-left-radius: 15px;
+}
+.msg-tail-out::after {
+  content: ""; position: absolute; bottom: 0; right: -26px;
+  width: 26px; height: 20px; background: var(--thread-bg, #ffffff);
+  border-bottom-left-radius: 10px;
+}
+.msg-tail-in::before {
+  content: ""; position: absolute; bottom: 0; left: -7px;
+  width: 20px; height: 20px; background: inherit;
+  border-bottom-right-radius: 15px;
+}
+.msg-tail-in::after {
+  content: ""; position: absolute; bottom: 0; left: -26px;
+  width: 26px; height: 20px; background: var(--thread-bg, #ffffff);
+  border-bottom-right-radius: 10px;
+}
