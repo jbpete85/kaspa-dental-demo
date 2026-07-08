@@ -11,9 +11,12 @@ import {
   Tooth,
 } from '@phosphor-icons/react'
 import { useChannelConversation } from '@/lib/useChannelConversation'
+import { useVoiceCall } from '@/lib/useVoiceCall'
 import { VOICE_SCRIPT } from '@/lib/mockConversations'
-import { kaspa } from '@/lib/kaspa.config'
+import { kaspa, transports, mockForced } from '@/lib/kaspa.config'
 import { cn } from '@/lib/utils'
+
+const voiceIsLive = () => transports.voice.mode === 'live' && !mockForced()
 
 function fmt(total: number) {
   const m = Math.floor(total / 60)
@@ -71,29 +74,51 @@ function CallButton({
 }
 
 export function VoiceCall({ live, onEnd }: { live: boolean; onEnd: () => void }) {
+  const isLive = voiceIsLive()
   const convo = useChannelConversation(VOICE_SCRIPT)
+  const voice = useVoiceCall(transports.voice.agentId)
   const [seconds, setSeconds] = useState(0)
   const [muted, setMuted] = useState(false)
 
   useEffect(() => {
-    if (live) convo.start()
-    else {
-      convo.reset()
+    if (live) {
+      if (isLive) voice.start()
+      else convo.start()
+    } else {
+      if (isLive) voice.end()
+      else convo.reset()
       setSeconds(0)
+      setMuted(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [live])
 
   useEffect(() => {
-    if (!live) return
+    if (!live || (isLive && voice.status !== 'active')) return
     const id = window.setInterval(() => setSeconds((s) => s + 1), 1000)
     return () => window.clearInterval(id)
-  }, [live])
+  }, [live, isLive, voice.status])
 
   const latest = convo.messages[convo.messages.length - 1]
-  const agentSpeaking = convo.isTyping || latest?.from === 'them'
-  const speaker = !latest ? '' : latest.from === 'me' ? kaspa.patient.firstName : kaspa.agentName
-  const caption = convo.isTyping ? '' : latest?.text ?? ''
+  const agentSpeaking = isLive ? voice.agentSpeaking : convo.isTyping || latest?.from === 'them'
+  const speaker = isLive
+    ? voice.speaker === 'agent'
+      ? kaspa.agentName
+      : voice.speaker === 'caller'
+        ? 'You'
+        : ''
+    : !latest
+      ? ''
+      : latest.from === 'me'
+        ? kaspa.patient.firstName
+        : kaspa.agentName
+  const caption = isLive
+    ? voice.status === 'error'
+      ? 'Couldn’t connect the call. Check mic permission and try again.'
+      : voice.caption
+    : convo.isTyping
+      ? ''
+      : (latest?.text ?? '')
 
   return (
     <div className="relative flex h-full flex-col font-ios text-white">
@@ -115,7 +140,7 @@ export function VoiceCall({ live, onEnd }: { live: boolean; onEnd: () => void })
       <div className="relative shrink-0 text-center" style={{ paddingTop: 78, paddingLeft: 24, paddingRight: 24 }}>
         <div style={{ fontSize: 30, fontWeight: 500, letterSpacing: 0.2 }}>{kaspa.name}</div>
         <div style={{ marginTop: 5, fontSize: 16, color: 'rgba(255,255,255,0.65)', fontVariantNumeric: 'tabular-nums' }}>
-          {live ? fmt(seconds) : 'calling…'}
+          {live ? (isLive && voice.status !== 'active' ? 'calling…' : fmt(seconds)) : 'calling…'}
         </div>
       </div>
 
@@ -171,7 +196,12 @@ export function VoiceCall({ live, onEnd }: { live: boolean; onEnd: () => void })
             icon={muted ? <MicrophoneSlash size={30} weight="fill" /> : <Microphone size={30} weight="fill" />}
             label="mute"
             active={muted}
-            onClick={() => setMuted((m) => !m)}
+            onClick={() => {
+              setMuted((m) => {
+                if (isLive) voice.setMuted(!m)
+                return !m
+              })
+            }}
           />
           <CallButton icon={<GridFour size={30} weight="fill" />} label="keypad" />
           <CallButton icon={<SpeakerHigh size={30} weight="fill" />} label="speaker" />

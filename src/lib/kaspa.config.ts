@@ -41,6 +41,11 @@ export const transports = {
     /** Shown locally on Start — mirrors the agent's configured greeting. */
     greeting: `Hi! 👋 Welcome to ${kaspa.name}. I’m ${kaspa.agentName}, our virtual receptionist. How can I help today?`,
   },
+  voice: {
+    mode: 'live' as 'live' | 'mock',
+    /** ElevenLabs conversational agent (Ava — Kaspa Dental). Browser SDK, mic + speakers. */
+    agentId: 'agent_3501kwzr330qe939dehrx8ndq18j',
+  },
   sms: {
     mode: 'live' as 'live' | 'mock',
     /** Thread mirror feed (n8n Data Table behind a webhook); `?reset=1` wipes it. */
