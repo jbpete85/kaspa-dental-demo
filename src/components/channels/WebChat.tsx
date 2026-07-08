@@ -19,10 +19,16 @@ import {
   Browsers,
   Tooth,
 } from '@phosphor-icons/react'
-import { useChannelConversation } from '@/lib/useChannelConversation'
+import { useChannelConversation, type LiveChatOptions } from '@/lib/useChannelConversation'
 import { WEB_SCRIPT } from '@/lib/mockConversations'
-import { kaspa } from '@/lib/kaspa.config'
+import { kaspa, transports, mockForced } from '@/lib/kaspa.config'
 import { cn } from '@/lib/utils'
+
+/** Live n8n transport unless config says mock or the presenter forced `?mock=1`. */
+function webChatLive(): LiveChatOptions | undefined {
+  if (transports.webChat.mode !== 'live' || mockForced()) return undefined
+  return { endpoint: transports.webChat.endpoint, greeting: transports.webChat.greeting }
+}
 
 export type WebSkin = 'website' | 'messenger'
 
@@ -49,7 +55,7 @@ function TypingDots({ color }: { color: string }) {
    the chat widget itself is Kaspa's own product UI, so it stays branded. */
 
 function WebsiteWidget({ live }: { live: boolean }) {
-  const convo = useChannelConversation(WEB_SCRIPT)
+  const convo = useChannelConversation(WEB_SCRIPT, webChatLive())
   const [draft, setDraft] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -113,6 +119,7 @@ function WebsiteWidget({ live }: { live: boolean }) {
                     padding: '8px 12px',
                     fontSize: 15,
                     lineHeight: '20px',
+                    whiteSpace: 'pre-wrap',
                     borderRadius: 16,
                     ...(isMe
                       ? { background: kaspa.accent, color: '#fff', borderBottomRightRadius: nextSame ? 16 : 5 }
@@ -187,7 +194,7 @@ function WebsiteWidget({ live }: { live: boolean }) {
 /* --------------------------- Facebook Messenger --------------------------- */
 
 function MessengerThread({ live }: { live: boolean }) {
-  const convo = useChannelConversation(WEB_SCRIPT)
+  const convo = useChannelConversation(WEB_SCRIPT, webChatLive())
   const [draft, setDraft] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -263,6 +270,7 @@ function MessengerThread({ live }: { live: boolean }) {
                   padding: '8px 12px',
                   fontSize: 16,
                   lineHeight: '21px',
+                  whiteSpace: 'pre-wrap',
                   borderRadius,
                   background: isMe ? FB_BLUE : '#F0F0F0',
                   color: isMe ? '#fff' : '#000',
