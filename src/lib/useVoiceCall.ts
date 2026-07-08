@@ -27,12 +27,24 @@ export function useVoiceCall(agentId: string) {
     c?.endSession().catch(() => {})
   }, [])
 
-  const start = useCallback(() => {
+  const start = useCallback(async () => {
     if (startedRef.current) return
     startedRef.current = true
     setStatus('connecting')
     setCaption('')
     setSpeaker('')
+    // Preflight the mic so a denied/missing device fails visibly instead of
+    // leaving the call stuck on "calling…".
+    try {
+      const probe = await navigator.mediaDevices.getUserMedia({ audio: true })
+      probe.getTracks().forEach((t) => t.stop())
+    } catch (err) {
+      console.error('microphone unavailable:', err)
+      setStatus('error')
+      startedRef.current = false
+      return
+    }
+    if (!startedRef.current) return
     Conversation.startSession({
       agentId,
       connectionType: 'webrtc',
