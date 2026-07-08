@@ -122,7 +122,7 @@ export function DemoStage() {
 
         {/* Footer note */}
         <p className="mt-16 text-center font-body text-[12px] text-muted-foreground/70">
-          Prototype · web chat is live (SMS &amp; voice mocked) · swap the practice in <code>kaspa.config.ts</code>
+          Prototype · web chat &amp; SMS are live (voice mocked) · swap the practice in <code>kaspa.config.ts</code>
         </p>
       </div>
     </div>

@@ -25,9 +25,9 @@ import { kaspa, transports, mockForced } from '@/lib/kaspa.config'
 import { cn } from '@/lib/utils'
 
 /** Live n8n transport unless config says mock or the presenter forced `?mock=1`. */
-function webChatLive(): LiveChatOptions | undefined {
+function webChatLive(): { live: LiveChatOptions } | undefined {
   if (transports.webChat.mode !== 'live' || mockForced()) return undefined
-  return { endpoint: transports.webChat.endpoint, greeting: transports.webChat.greeting }
+  return { live: { endpoint: transports.webChat.endpoint, greeting: transports.webChat.greeting } }
 }
 
 export type WebSkin = 'website' | 'messenger'

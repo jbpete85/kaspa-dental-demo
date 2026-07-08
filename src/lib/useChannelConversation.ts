@@ -13,15 +13,34 @@ export interface LiveChatOptions {
   greeting: string
 }
 
+/** Options for mirroring an external thread (real SMS via Twilio → n8n Data Table). */
+export interface PollOptions {
+  /** Thread-feed webhook; GET returns [{messages: [{from, text, ts}]}], `?reset=1` wipes it. */
+  endpoint: string
+  /** Poll cadence while the channel is live. */
+  intervalMs?: number
+  /** Wipe the stored thread when the presenter presses Start. */
+  resetOnStart?: boolean
+}
+
+export interface ConversationOptions {
+  live?: LiveChatOptions
+  poll?: PollOptions
+}
+
 /**
  * The conversation engine seam.
  *
  * Mock mode drives a canned script with realistic typing + timing.
- * Live mode (pass `live`) talks to the real n8n agent: every user message
+ * Live mode (`opts.live`) talks to the real n8n agent: every user message
  * POSTs to the chat webhook and the reply renders as a `them` bubble.
- * The channel UIs consume the same surface either way.
+ * Poll mode (`opts.poll`) mirrors an external conversation (real SMS): the
+ * thread renders from a feed and the on-screen composer is a no-op.
+ * The channel UIs consume the same surface in all three modes.
  */
-export function useChannelConversation(script: ChatStep[], live?: LiveChatOptions) {
+export function useChannelConversation(script: ChatStep[], opts?: ConversationOptions) {
+  const live = opts?.live
+  const poll = opts?.poll
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isTyping, setIsTyping] = useState(false)
   const [done, setDone] = useState(false)
@@ -29,6 +48,14 @@ export function useChannelConversation(script: ChatStep[], live?: LiveChatOption
   const ackIdx = useRef(0)
   const sessionId = useRef('')
   const aborter = useRef<AbortController | null>(null)
+  const pollTimer = useRef<number | null>(null)
+
+  const stopPolling = useCallback(() => {
+    if (pollTimer.current !== null) {
+      window.clearInterval(pollTimer.current)
+      pollTimer.current = null
+    }
+  }, [])
 
   const clearTimers = useCallback(() => {
     timers.current.forEach((t) => window.clearTimeout(t))
@@ -37,24 +64,57 @@ export function useChannelConversation(script: ChatStep[], live?: LiveChatOption
 
   const reset = useCallback(() => {
     clearTimers()
+    stopPolling()
     aborter.current?.abort()
     aborter.current = null
     setMessages([])
     setIsTyping(false)
     setDone(false)
-  }, [clearTimers])
+  }, [clearTimers, stopPolling])
 
   const push = useCallback((from: ChatMessage['from'], text: string) => {
     setMessages((m) => [...m, { id: nextId(), from, text }])
   }, [])
 
-  /** Mock: play the scripted conversation. Live: fresh session + greeting. */
+  /** Mock: play the script. Live: fresh session + greeting. Poll: mirror the feed. */
   const start = useCallback(() => {
     clearTimers()
+    stopPolling()
     aborter.current?.abort()
     setMessages([])
     setIsTyping(false)
     setDone(false)
+
+    if (poll) {
+      const interval = poll.intervalMs ?? 1500
+      const tick = () => {
+        fetch(poll.endpoint)
+          .then((r) => r.json())
+          .then((data: Array<{ messages?: Array<{ from: string; text: string }> }>) => {
+            const rows = data?.[0]?.messages ?? []
+            setMessages(
+              rows.map((r, i) => ({
+                id: `p${i}`,
+                from: (r.from === 'me' ? 'me' : 'them') as ChatMessage['from'],
+                text: r.text,
+              })),
+            )
+            // patient texted, agent hasn't answered yet → show typing dots
+            setIsTyping(rows.length > 0 && rows[rows.length - 1].from === 'me')
+          })
+          .catch(() => {}) // transient poll misses are fine
+      }
+      const begin = () => {
+        tick()
+        pollTimer.current = window.setInterval(tick, interval)
+      }
+      if (poll.resetOnStart) {
+        fetch(`${poll.endpoint}?reset=1`).catch(() => {}).then(begin)
+      } else {
+        begin()
+      }
+      return
+    }
 
     if (live) {
       sessionId.current = `web-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -96,11 +156,12 @@ export function useChannelConversation(script: ChatStep[], live?: LiveChatOption
         t = tShow
       }
     })
-  }, [script, live, clearTimers, push])
+  }, [script, live, poll, clearTimers, stopPolling, push])
 
-  /** Live: round-trip to the agent. Mock: canned ack. */
+  /** Live: round-trip to the agent. Poll: no-op (the real phone drives). Mock: canned ack. */
   const sendUserMessage = useCallback(
     (text: string) => {
+      if (poll) return // mirror mode: the conversation belongs to the real texter
       const clean = text.trim()
       if (!clean) return
       push('me', clean)
@@ -148,15 +209,16 @@ export function useChannelConversation(script: ChatStep[], live?: LiveChatOption
         }, 1700),
       )
     },
-    [live, push],
+    [live, poll, push],
   )
 
   useEffect(
     () => () => {
       clearTimers()
+      stopPolling()
       aborter.current?.abort()
     },
-    [clearTimers],
+    [clearTimers, stopPolling],
   )
 
   return { messages, isTyping, done, start, reset, sendUserMessage }

@@ -1,9 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { CaretLeft, CaretRight, Plus, ArrowUp, Tooth } from '@phosphor-icons/react'
-import { useChannelConversation } from '@/lib/useChannelConversation'
+import { useChannelConversation, type PollOptions } from '@/lib/useChannelConversation'
 import { SMS_SCRIPT } from '@/lib/mockConversations'
-import { kaspa } from '@/lib/kaspa.config'
+import { kaspa, transports, mockForced } from '@/lib/kaspa.config'
 import { cn } from '@/lib/utils'
+
+/** Mirror the real Twilio thread unless config says mock or `?mock=1` forced it. */
+function smsPoll(): { poll: PollOptions } | undefined {
+  if (transports.sms.mode !== 'live' || mockForced()) return undefined
+  return {
+    poll: {
+      endpoint: transports.sms.threadEndpoint,
+      resetOnStart: transports.sms.resetOnStart,
+    },
+  }
+}
 
 /* iOS light-mode Messages palette */
 const IOS_BLUE = '#007AFF'
@@ -12,7 +23,8 @@ const RECEIVED_GRAY = '#E9E9EB'
 const LABEL_GRAY = '#8E8E93'
 
 export function SmsMessages({ live }: { live: boolean }) {
-  const convo = useChannelConversation(SMS_SCRIPT)
+  const mirror = smsPoll()
+  const convo = useChannelConversation(SMS_SCRIPT, mirror)
   const [draft, setDraft] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -69,7 +81,9 @@ export function SmsMessages({ live }: { live: boolean }) {
           <span style={{ fontWeight: 600 }}>Today</span> 9:41 AM
         </div>
         <div className="text-center" style={{ fontSize: 11.5, color: LABEL_GRAY, paddingBottom: 10 }}>
-          Text Message · SMS
+          {mirror && live && transports.sms.numberToText
+            ? `Text ${transports.sms.numberToText} to talk to ${kaspa.agentName}`
+            : 'Text Message · SMS'}
         </div>
 
         {msgs.map((m, i) => {
@@ -95,6 +109,7 @@ export function SmsMessages({ live }: { live: boolean }) {
                   padding: '7px 12px',
                   fontSize: 17,
                   lineHeight: '22px',
+                  whiteSpace: 'pre-wrap',
                   borderRadius,
                   background: isMe ? SMS_GREEN : RECEIVED_GRAY,
                   color: isMe ? '#ffffff' : '#000000',

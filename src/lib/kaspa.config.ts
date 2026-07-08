@@ -41,6 +41,19 @@ export const transports = {
     /** Shown locally on Start — mirrors the agent's configured greeting. */
     greeting: `Hi! 👋 Welcome to ${kaspa.name}. I’m ${kaspa.agentName}, our virtual receptionist. How can I help today?`,
   },
+  sms: {
+    mode: 'live' as 'live' | 'mock',
+    /** Thread mirror feed (n8n Data Table behind a webhook); `?reset=1` wipes it. */
+    threadEndpoint: 'https://goodhelpai.app.n8n.cloud/webhook/kaspa-sms-thread',
+    /** Wipe the thread each time the presenter presses Start. */
+    resetOnStart: true,
+    /**
+     * The real Twilio number the audience texts. PENDING: point a Twilio
+     * number's incoming-SMS webhook at
+     * https://goodhelpai.app.n8n.cloud/webhook/kaspa-sms then put it here.
+     */
+    numberToText: '',
+  },
 } as const
 
 /** True when the presenter forced mock mode via `?mock=1`. */
